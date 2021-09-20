@@ -1,0 +1,116 @@
+BÀI TẬP SQL
+* Tạo bảng
+	- bảng project_users 
+	CREATE TABLE project_users (
+		id bigint NOT NULL AUTO_INCREMENT,
+		project_id bigint,
+		user_id bigint,
+		created_at timestamp,
+		updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id),
+		ADD CONSTRAINT project_users_users_fk
+		FOREIGN KEY (user_id) REFERENCES users(id),
+		ADD CONSTRAINT project_users_projects_fk
+		FOREIGN KEY (project_id) REFERENCES projects(id))
+	- bảng users
+	CREATE TABLE users (
+		id bigint NOT NULL AUTO_INCREMENT,
+		username varchar(50),
+		email varchar(250),
+		password varchar(50),
+		birthday date,
+		image_url text,
+		is_active boolean,
+		created_at timestamp,
+		updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id))
+	- bảng projects
+	CREATE TABLE projects (
+		id bigint NOT NULL AUTO_INCREMENT,
+		project_name varchar(255),
+		category_id bigint,
+		projected_spend int,
+		projected_variance int,
+		revenue_recognised int,
+		company_id bigint,
+		created_at timestamp,
+		updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id),
+		ADD CONSTRAINT project_categories_fk
+		FOREIGN KEY (category_id) REFERENCES categories(id),
+		ADD CONSTRAINT project_companies_fk
+		FOREIGN KEY (company_id) REFERENCES companies(id))
+	- bảng categories
+	CREATE TABLE categories (
+		id bigint NOT NULL AUTO_INCREMENT,
+		category_name varchar(50),	
+		created_at timestamp,
+		updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id))
+	- bảng companies
+	CREATE TABLE companies (
+		id bigint NOT NULL AUTO_INCREMENT,
+		company_name text,
+		company_code text,		
+		created_at timestamp,
+		updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id))
+
+1. Viết lệnh sql để tạo dữ liệu cho các bảng
+INSERT INTO companies (company_name, company_code)
+	VALUES ('abcs', 111);
+
+INSERT INTO categories (category_name)
+	VALUES ('abc');
+
+INSERT INTO projects (project_name, category_id, project_spend, projected_variance, revenue_recognised, company_id)
+	VALUES ('du_an_1', 1, 100, 121, 121, 1);
+
+INSERT INTO users (username, email, password, birthday, image_url, is_active)
+	VALUES ('hoa', 'hoa@gmail.com', '123456', '2021-09-01', 'https://anh', 1);
+
+INSERT INTO project_users (project_id, user_id)
+	VALUES (1, 1);
+
+2. Viết lệnh sql để có thể lấy thông tin những bản ghi của projects và số lượng user của mỗi projects đó (count user)
+	SELECT p.*, COUNT(pu.user_id) as count_user 
+	  FROM projects	as p
+	  INNER JOIN project_users as pu
+	  ON p.id = pu.project_id
+	  GROUP BY pu.project_id
+
+3. viết lệnh sql để lấy ra danh sách các project của company có company_name = “monstar-lab” 
+	SELECT p.*, c.company_name 
+	  FROM projects	as p
+	  INNER JOIN companies as c
+	  ON p.company_id = c.id	  
+	  WHERE c.company_name = 'monstar-lab'
+
+4. viết lệnh sql lấy ra danh sách các công ty có project có project_spend > 100
+	SELECT c.*
+	  FROM companies as c
+	  INNER JOIN projects as p
+	  ON p.company_id = c.id	  
+	  WHERE p.projected_spend > 100
+	  GROUP BY p.company_id
+
+5. viết lệnh sql để lấy ra thông tin của user  tham gia vào projects
+	SELECT p.project_name, u.* 
+	  FROM project_users as pu
+	  INNER JOIN projects as p ON p.id = pu.project_id	
+	  INNER JOIN users as u ON u.id = pu.user_id  
+	  WHERE p.id = ANY(SELECT p.id FROM projects)
+	  ORDER BY p.id
+
+6. lấy ra danh sách project mà có số lượng user tham gia > 10 , sắp xếp số lượng user tham gia tăng dần
+	SELECT p.*, COUNT(pu.user_id) as sl
+	  FROM projects	as p
+	  INNER JOIN project_users as pu
+	  ON p.id = pu.project_id	
+	  GROUP BY pu.project_id
+	  HAVING sl > 10
+	  ORDER BY sl	  
+
+7. Xoá project mà chưa có user nào tham gia
+DELETE FROM projects 
+	WHERE NOT EXISTS(SELECT project_id FROM project_users WHERE projects.id = project_users.project_id)
